@@ -1,42 +1,16 @@
 /****************************************************************************
- # $Id: main.c,v 1.7 2011/03/02 19:35:09 avaccari Exp $
  #
- # Copyright (C) 1999
+ # Copyright (C) 2018
  # Associated Universities, Inc. Washington DC, USA.
  #
- # Correspondence concerning ALMA should be addressed as follows:
- #        Internet email: mmaswgrp@nrao.edu
  ****************************************************************************
  *
  *  MAIN.C 
  *
  *  Slave node implementation for ALMA compressor monitor and control.
  *
- *	Revision history
+ *	See 'Release History.txt' for change log
  *
- *	2011-02-28
- *	Rev. 2.0.1
- *	- Lowered interrupt priority for the second counter and the internal 
- *	  monitoring. They are now placed lower than CAN not just in GLVL but
- *	  also in ILVL. This will assure CAN can interrupt them both in case
- *    of arbitration.
- *
- *	2011-02-21c
- *  Rev. 2.0.0
- *  - Updated to comply with CMC module rev.B mounting rev.C PCB
- *  - Implemented Sumitomo timing requirements for hardware operation
- *	- Modified for continuous hardware monitoring
- *	- Modified to allow data on FE cryogenics to be pushed
- *
- *  2008-03-05
- *  Rev. 1.0.1
- *  - Fixed mapping of analog channels 
- *  - Changed scaling for pressure
- *  - Inverted logic for drive readout
- * 
- *  2007-09-19
- *  Rev. 1.0.0
- *  First version ready for debugging.
  *
  ****************************************************************************
  */
@@ -47,15 +21,22 @@
 #include <string.h>
 
 /* include library interface */
-#include "..\..\libraries\amb\amb.h"
-#include "..\..\libraries\ds1820\ds1820.h"
-#include "..\..\libraries\onboard_adc\onboard_adc.h"
+#include "..\libraries\amb\amb.h"
+#include "..\libraries\ds1820\ds1820.h"
+#include "..\libraries\onboard_adc\onboard_adc.h"
 #include "serial.h"
 
 /*** Defines ****/
-#define USE_48MS	0	// Defines if the 48ms pulse is used to trigger the correponding interrupt
-						// If yes then P8.0 will not be available for use as a normal I/O pin since
- 					    // it will receive the 48ms pulse.
+
+//! Is the firmware using the 48 ms pulse?
+/*! Defines if the 48ms pulse is used to trigger the correponding interrupt.
+	If yes then P8.0 will not be available for use as a normal I/O pin since
+	the assigned pin on the C167 will be jumpered to receive the 48ms pulse.
+
+	\note	To be able to use the 48 ms pulse, it is necessary to program the
+	 	  	xilinx chip to allow the incoming pulse to be passed throught. */
+// #define USE_48MS	
+
 
 /* General defines */
 #define HIGH	1
@@ -66,8 +47,8 @@
 
 /* Revision Level Defines */
 #define	MAJOR	2
-#define MINOR	0
-#define PATCH	1
+#define MINOR	1
+#define PATCH	0
 
 /** RCAs **/
 /* Monitor */
@@ -380,18 +361,15 @@ void main(void) {
 	/* A variable to keep track of time betwen RS232 messages */
 	ulong lastMessageTime = timerSec;
 
-	if(USE_48MS){
+	#ifdef USE_48MS
 		// Setup the CAPCOM2 unit to receive the 48ms pulse from the Xilinx
 		P8&=0xFE; // Set value of P8.0 to 0
 		DP8&=0xFE; // Set INPUT direction for P8.0
 		CCM4&=0xFFF0; // Clear setup for CCMOD16
 		CCM4|=0x0001; // Set CCMOD16 to trigger on rising edge
 		CC16IC=0x0078; // Interrupt: ILVL=14, GLVL=0;
-	}
-
-
-
-
+	#endif // USE_48MS
+	
 	/* Make sure that external bus control signal buffer is disabled */
 	DP4 |= 0x01;
 	DISABLE_EX_BUF = HIGH;
@@ -415,20 +393,7 @@ void main(void) {
 	if (amb_register_function(FIRST_CONTROL_RCA, LAST_CONTROL_RCA, control_msg) !=0)
 		return;
 
-
-
-	/* Initialize control lines */
-	rmtDrv = LOW; 	// Compressor off
-	rmtRst = LOW;	// Reset line default to low. It needs an high pulse to reset the compressor.
-
-	/* Fault latch reset is idle low. It needs an high pulse to reset the compressor. */
-	fltRst = HIGH;	
-	fltRst = LOW;
-
-
-
-
-	/* Port direction initialization */
+  /* Port direction initialization */
 	/* Write (set corresponding port direction bits to 1) */
 	REMOTE_RST_DP |= REMOTE_RST_MASK;
 	REMOTE_DRV_DP |= REMOTE_DRV_MASK;
@@ -446,8 +411,21 @@ void main(void) {
 	ECU_TYPE_DP	&= ~ECU_TYPE_MASK;
 	FAULT_STAT_DP &= ~FAULT_STAT_MASK;
 
+	/* Initialize control lines */
 
+  /* Check whether the comressor is currently ON.  If so, leave it on */
+	if (drvInd) {
+		rmtDrv = HIGH; 	// Compressor on
+		lastOnSec=timerSec;
+	} else {
+		rmtDrv = LOW; 	// Compressor off
+	}
+	
+	rmtRst = LOW;	// Reset line default to low. It needs an high pulse to reset the compressor.
 
+	/* Fault latch reset is idle low. It needs an high pulse to reset the compressor. */
+	fltRst = HIGH;	
+	fltRst = LOW;
 
 	/* Initialize modules */
 	adc_init(0,0,0,0); // ADC initialization
@@ -624,7 +602,7 @@ ubyte *buildMessage(ubyte *text, DATA *data, ubyte *units, DATA_TYPE type){
 	/* Clear message */
 	memset(message,'\0',SIZE_OF_SERIAL_MESSAGE);
 	
-	ageOfData = (timerSec - data->time)/60;
+	ageOfData = (ubyte) ((timerSec - data->time)/60);
 	
 	if(ageOfData>=255){
 		ageOfData=255;
