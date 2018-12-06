@@ -1,5 +1,12 @@
 RELEASE/REVISION HISTORY
 
+2011-02-21
+Rev. 2.0.0 (ALMA_COMPRESSOR_Ver_2_0_0(ALMA-40_04_05_00-70_35_25_00-B-ICD).H86)
+- Updated to comply with CALMA_COMPRESSOR_Ver_2_0_0(ALMA-40_04_05_00-70_35_25_00-B-ICD)MC module rev.B mounting rev.C PCB
+- Implemented Sumitomo timing requirements for hardware operation
+- Modified for continuous hardware monitoring
+- Modified to allow data on FE cryogenics to be pushed
+
 2008-03-05
 Rev. 1.0.1 (ALMA_COMPRESSOR_Ver_1_0_1(ALMA-40_04_05_00-75_35_25_00-A-ICD-VER_A06).H86)
 - Fixed mapping of analog channels 
