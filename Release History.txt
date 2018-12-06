@@ -1,5 +1,13 @@
 RELEASE/REVISION HISTORY
 
+2011-02-28
+Rev. 2.0.1
+- Lowered interrupt priority for the second counter and the internal 
+  monitoring. They are now placed lower than CAN not just in GLVL but
+  also in ILVL. This will assure CAN can interrupt them both in case
+  of arbitration.
+
+
 2011-02-21
 Rev. 2.0.0 (ALMA_COMPRESSOR_Ver_2_0_0(ALMA-40_04_05_00-70_35_25_00-B-ICD).H86)
 - Updated to comply with CALMA_COMPRESSOR_Ver_2_0_0(ALMA-40_04_05_00-70_35_25_00-B-ICD)MC module rev.B mounting rev.C PCB

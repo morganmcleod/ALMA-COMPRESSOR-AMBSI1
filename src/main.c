@@ -1,5 +1,5 @@
 /****************************************************************************
- # $Id: main.c,v 1.6 2011/02/21 23:55:38 avaccari Exp $
+ # $Id: main.c,v 1.7 2011/03/02 19:35:09 avaccari Exp $
  #
  # Copyright (C) 1999
  # Associated Universities, Inc. Washington DC, USA.
@@ -14,7 +14,14 @@
  *
  *	Revision history
  *
- *	2011-02-21
+ *	2011-02-28
+ *	Rev. 2.0.1
+ *	- Lowered interrupt priority for the second counter and the internal 
+ *	  monitoring. They are now placed lower than CAN not just in GLVL but
+ *	  also in ILVL. This will assure CAN can interrupt them both in case
+ *    of arbitration.
+ *
+ *	2011-02-21c
  *  Rev. 2.0.0
  *  - Updated to comply with CMC module rev.B mounting rev.C PCB
  *  - Implemented Sumitomo timing requirements for hardware operation
@@ -60,7 +67,7 @@
 /* Revision Level Defines */
 #define	MAJOR	2
 #define MINOR	0
-#define PATCH	0
+#define PATCH	1
 
 /** RCAs **/
 /* Monitor */
@@ -1134,16 +1141,16 @@ void GPT1_vInit(void)
   ///  Configuration of the used GPT1 Interrupts:
   ///  -----------------------------------------------------------------------
   ///  - timer 3 service request node configuration:
-  ///  - timer 3 interrupt priority level (ILVL) = 13
-  ///  - timer 3 interrupt group level (GLVL) = 2
+  ///  - timer 3 interrupt priority level (ILVL) = 12
+  ///  - timer 3 interrupt group level (GLVL) = 3
 
-  T3IC           =  0x0076;     
+  T3IC           =  0x0073;     
 
   ///  - timer 4 service request node configuration:
-  ///  - timer 4 interrupt priority level (ILVL) = 13
-  ///  - timer 4 interrupt group level (GLVL) = 1
+  ///  - timer 4 interrupt priority level (ILVL) = 11
+  ///  - timer 4 interrupt group level (GLVL) = 3
 
-  T4IC           =  0x0075;     
+  T4IC           =  0x006F;     
 
 
 } //  End of function GPT1_vInit
